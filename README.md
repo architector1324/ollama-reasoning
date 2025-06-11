@@ -46,3 +46,49 @@ Thanks to this architecture, `ollama-reasoning` allows base LLMs to:
 *   **Avoid Looping:** Automatically recognize and exit repetitive, unproductive reasoning cycles.
 *   **Self-Correct:** Learn from errors and adapt their strategy for successful problem-solving.
 *   **Achieve Results Comparable to or Surpassing Specialized Reasoning LLMs**, by utilizing less powerful or more compact base models.
+
+## Flexible Architecture: Choosing a Reasoning Mode
+
+The `Ollama Reasoning` project is designed with flexibility in mind, allowing users to select between two levels of complexity and performance: the **Standard Mode** and the **Full Reasoning Mode** architecture. This enables optimization of resource utilization based on the complexity of the task and the required level of reliability.
+
+### 1. Standard Mode: `Planner` + `Worker`
+
+This mode activates the basic agent pair, which already significantly enhances the LLM's capabilities for structured reasoning and transparency.
+
+*   **How It Works:**
+    *   **Planner:** Receives the user's task and generates a step-by-step `Deliberation Plan`.
+    *   **Worker:** Receives this plan and proceeds to execute it. It maintains a detailed internal monologue, following the plan step by step, and formulates the final answer.
+*   **Advantages:**
+    *   **Efficiency:** Significantly faster and more economical compared to the full architecture, as it requires fewer iterations and LLM calls.
+    *   **Transparency:** Provides a detailed `/think` block, allowing the user to trace the model's thought process.
+    *   **Sufficiency for Many Tasks:** Effectively handles most standard queries, including explanations, recommendations, simple calculations, and multi-step logical problems with predictable solutions.
+    *   **Reliable Formatting:** Ensures clean, structured output.
+*   **Ideal for:**
+    *   General question-answering.
+    *   Tasks where the solution follows a relatively linear path.
+    *   Applications requiring quick responses and resource efficiency.
+
+### 2. Full Reasoning Mode: `Planner-Reasoner` + `Worker-Supervisor`
+
+This mode activates all four specialized agents and their adversarial interactions, designed to tackle the most complex and critical problems where a high degree of self-correction and error resilience is required.
+
+*   **How It Works:**
+    1.  The **Planner** generates an initial plan.
+    2.  The **Reasoner/Reflector** (the Planner's critic) actively analyzes the proposed plan for logical consistency, completeness, potential dead ends, loops, and optimality *before its execution*. If the plan is deemed suboptimal or contains flaws, the Reasoner/Reflector prompts the Planner to revise it.
+    3.  The **Worker** attempts to execute *each step* of the approved plan.
+    4.  The **Supervisor** (the Worker's critic) immediately and actively verifies the result of the current step's execution for correctness, logical consistency with the task's current state, and adherence to the step's objective.
+    5.  If the Supervisor detects an error, looping behavior, or an inability to progress, it "challenges" the Reasoner/Reflector, initiating a reassessment of the strategy and the generation of a new plan.
+    6.  This closed-loop feedback mechanism continues until an optimal and correct solution is achieved.
+*   **Advantages:**
+    *   **Maximum Reliability:** Significantly enhances the accuracy and correctness of solutions for complex problems, minimizing logical errors and "hallucinations."
+    *   **Active Self-Correction:** The system can detect and correct its own errors at various levels, not just at the final output stage.
+    *   **Ability to Solve Difficult Problems:** Effectively overcomes challenges related to multi-step planning, state tracking, dead ends, and loops (e.g., the classic "water jug problem").
+    *   **Resilience for "Non-Reasoning" LLMs:** Allows less powerful or compact base LLMs to approach the performance of specialized "reasoning" models.
+*   **Disadvantages:**
+    *   **Higher Computational Cost:** Involves significantly more LLM calls, leading to increased token usage and longer response times.
+    *   **Increased Latency:** Due to numerous iterations of review and reflection.
+*   **Ideal for:**
+    *   Complex, multi-step logical problems and puzzles.
+    *   Tasks requiring precise state tracking.
+    *   Applications where absolute solution accuracy is critical, and the tolerance for error is very low.
+    *   Use with less powerful or compact base LLMs that frequently err without such a structured approach.
